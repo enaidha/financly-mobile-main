@@ -4,6 +4,7 @@ import 'package:finance_plan/configs/flutterfire.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/style_constant.dart';
+import 'package:finance_plan/main.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,17 +27,16 @@ class _OptionPageState extends State<OptionPage> {
   CollectionReference users = FirebaseFirestore.instance.collection('users');
 
   getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
-      name = preferences.getString('name')!;
-      email = preferences.getString('email')!;
-      photoUrl = preferences.containsKey('photo_url')
-          ? preferences.getString('photo_url')
-          : '-';
+      uid = pref.getString('user_id')!;
+      name = pref.getString('name')!;
+      email = pref.getString('email')!;
+      photoUrl =
+          pref.containsKey('photo_url') ? pref.getString('photo_url') : '-';
     });
   }
 

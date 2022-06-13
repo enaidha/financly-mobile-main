@@ -16,6 +16,7 @@ class AuthServices {
         idToken: googleSignInAuthentication.idToken,
       );
       await _auth.signInWithCredential(credential);
+      _googleSignIn.signOut();
     } on FirebaseAuthException catch (e) {
       print('Firebase google sign in error');
       print(e.message);

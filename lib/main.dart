@@ -4,6 +4,7 @@ import 'package:finance_plan/pages/edit_goals_page.dart';
 import 'package:finance_plan/pages/edit_profile_page.dart';
 import 'package:finance_plan/pages/goals_page.dart';
 import 'package:finance_plan/pages/guest_page.dart';
+import 'package:finance_plan/pages/home_screen.dart';
 import 'package:finance_plan/pages/laporan_page.dart';
 import 'package:finance_plan/pages/list_berita.dart';
 import 'package:finance_plan/pages/list_goals_page.dart';
@@ -15,10 +16,10 @@ import 'package:finance_plan/pages/pengeluaran_page.dart';
 import 'package:finance_plan/pages/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'configs/local_notification.dart';
-import 'package:workmanager/workmanager.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -58,7 +59,10 @@ Future getDocs() async {
       print('goals $i');
     }
 } */
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
+late SharedPreferences preferences;
 void main() async {
   tz.initializeTimeZones();
   var jakarta = tz.getLocation('Asia/Jakarta');
@@ -67,12 +71,20 @@ void main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) => const LoadingPage();
 
   WidgetsFlutterBinding.ensureInitialized();
+  preferences = await SharedPreferences.getInstance();
   await Firebase.initializeApp();
-  Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
   // Workmanager().registerOneOffTask('1', 'notification task');
   // Workmanager().registerPeriodicTask("test_workertask", "test_workertask",
   //     inputData: {"data1": "value1", "data2": "value2"},
   //     frequency: Duration(minutes: 15));
+
+// initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('ic_launcher');
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+      onSelectNotification: (payload) {});
 
   runApp(const MyApp());
 }
@@ -96,6 +108,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         // '/register': (context) => const RegisterPage(),
         '/home': (context) => const BaseScreen(),
+        '/dashboard': ((context) => const HomeScreen()),
         '/pemasukan': (context) => const PemasukanPage(),
         '/pengeluaran': (context) => const PengeluaranPage(),
         '/option': (context) => const OptionPage(),

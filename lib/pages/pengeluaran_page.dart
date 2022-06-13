@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
+import 'package:finance_plan/main.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,12 +24,12 @@ class _PengeluaranPageState extends State<PengeluaranPage> {
   CollectionReference users = FirebaseFirestore.instance.collection('users');
 
   getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
+      uid = pref.getString('user_id')!;
     });
   }
 
@@ -177,8 +178,6 @@ class _PengeluaranPageState extends State<PengeluaranPage> {
           backgroundColor: mCardTitleColor,
         );
         ScaffoldMessenger.of(context).showSnackBar(snackbar);
-
-        Navigator.pop(context);
       }
     }
   }
@@ -573,6 +572,9 @@ class _PengeluaranPageState extends State<PengeluaranPage> {
                 ),
               ),
             ),
+            const SizedBox(
+              height: 30,
+            )
           ],
         ),
       ),
@@ -603,7 +605,6 @@ class _PengeluaranPageState extends State<PengeluaranPage> {
           title: const Text('Dikurangi Saldo'),
           onTap: () {
             submit();
-            Navigator.pop(context);
           },
         ),
         ListTile(
@@ -612,7 +613,6 @@ class _PengeluaranPageState extends State<PengeluaranPage> {
           title: const Text('Masuk di Pencatatan Saja'),
           onTap: () {
             pencatatan();
-            Navigator.pop(context);
           },
         ),
       ],

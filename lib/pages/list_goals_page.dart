@@ -3,6 +3,7 @@ import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/constants.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
+import 'package:finance_plan/main.dart';
 import 'package:finance_plan/models/user_argument.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -25,12 +26,12 @@ class _ListGoalsPageState extends State<ListGoalsPage> {
   num _currentSaldo = 0;
 
   getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
+      uid = pref.getString('user_id')!;
     });
     CollectionReference tabungan = users.doc(uid).collection('tabungan');
     await tabungan.get().then((value) {
@@ -56,74 +57,78 @@ class _ListGoalsPageState extends State<ListGoalsPage> {
     return Scaffold(
       appBar: _appBar(),
       body: SafeArea(
-        child: StreamBuilder<QuerySnapshot>(
-            stream: users
-                .doc(uid)
-                .collection('goals')
-                .orderBy('created_at', descending: false)
-                .snapshots(),
-            builder: (context, snapGoals) {
-              if (snapGoals.hasData) {
-                print('size : ${snapGoals.data!.size}');
-                if (snapGoals.data!.size > 0) {
-                  return ListView(
-                    children: List.generate(
-                      snapGoals.data!.size,
-                      (i) => _goalsLayout(
-                          index: i,
-                          title: snapGoals.data!.docs.elementAt(i).get('nama'),
-                          target: snapGoals.data!.docs
-                              .elementAt(i)
-                              .get('target')
-                              .toString(),
-                          status:
-                              snapGoals.data!.docs.elementAt(i).get('status'),
-                          deadline:
-                              snapGoals.data!.docs.elementAt(i).get('deadline'),
-                          deadlineBulan: snapGoals.data!.docs
-                              .elementAt(i)
-                              .get('deadline_bulan'),
-                          uid: snapGoals.data!.docs.elementAt(i).id,
-                          createdAt: snapGoals.data!.docs
-                              .elementAt(i)
-                              .get('created_at')),
-                    ),
-                  );
-                } else {
-                  return InkWell(
-                    onTap: () => Navigator.pushNamed(context, '/goals'),
-                    child: Container(
-                        width: _sizeConfig.screenWidth,
-                        height: _sizeConfig.blockVertical! * 10,
-                        margin: EdgeInsets.only(
-                          top: _sizeConfig.blockVertical! * 4,
-                          left: _sizeConfig.marginHorizontalSize!,
-                          right: _sizeConfig.marginHorizontalSize!,
+        child: uid == null || uid!.isEmpty
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : StreamBuilder<QuerySnapshot>(
+                stream: users
+                    .doc(uid)
+                    .collection('goals')
+                    .orderBy('created_at', descending: false)
+                    .snapshots(),
+                builder: (context, snapGoals) {
+                  if (snapGoals.hasData) {
+                    print('size : ${snapGoals.data!.size}');
+                    if (snapGoals.data!.size > 0) {
+                      return ListView(
+                        children: List.generate(
+                          snapGoals.data!.size,
+                          (i) => _goalsLayout(
+                              index: i,
+                              title:
+                                  snapGoals.data!.docs.elementAt(i).get('nama'),
+                              target: snapGoals.data!.docs
+                                  .elementAt(i)
+                                  .get('target')
+                                  .toString(),
+                              status: snapGoals.data!.docs
+                                  .elementAt(i)
+                                  .get('status'),
+                              deadline: snapGoals.data!.docs
+                                  .elementAt(i)
+                                  .get('deadline'),
+                              deadlineBulan: snapGoals.data!.docs
+                                  .elementAt(i)
+                                  .get('deadline_bulan'),
+                              uid: snapGoals.data!.docs.elementAt(i).id,
+                              createdAt: snapGoals.data!.docs
+                                  .elementAt(i)
+                                  .get('created_at')),
                         ),
-                        padding: EdgeInsets.symmetric(
-                          // vertical: _sizeConfig.marginHorizontalSize!,
-                          horizontal: _sizeConfig.marginHorizontalSize!,
-                        ),
-                        decoration: BoxDecoration(
-                          color: mPrimaryColor,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Center(
-                            child: Text(
-                          'Ayo segera buat tujuanmu menabung !!!',
-                          style: mTitleStyle.copyWith(
-                              color: Colors.white, fontSize: 18),
-                        ))),
-                  );
-                }
-              } else {
-                return Container();
-              }
-            }),
+                      );
+                    } else {
+                      return InkWell(
+                        onTap: () => Navigator.pushNamed(context, '/goals'),
+                        child: Container(
+                            width: _sizeConfig.screenWidth,
+                            height: _sizeConfig.blockVertical! * 10,
+                            margin: EdgeInsets.only(
+                              top: _sizeConfig.blockVertical! * 4,
+                              left: _sizeConfig.marginHorizontalSize!,
+                              right: _sizeConfig.marginHorizontalSize!,
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              // vertical: _sizeConfig.marginHorizontalSize!,
+                              horizontal: _sizeConfig.marginHorizontalSize!,
+                            ),
+                            decoration: BoxDecoration(
+                              color: mPrimaryColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Center(
+                                child: Text(
+                              'Ayo segera buat tujuanmu menabung !!!',
+                              style: mTitleStyle.copyWith(
+                                  color: Colors.white, fontSize: 18),
+                            ))),
+                      );
+                    }
+                  } else {
+                    return Container();
+                  }
+                }),
       ),
-      bottomNavigationBar: _myBottomBar(),
-      floatingActionButton: _myFloat(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -245,91 +250,5 @@ class _ListGoalsPageState extends State<ListGoalsPage> {
                         color: Colors.white, fontWeight: FontWeight.bold)))
           ],
         ));
-  }
-
-  Widget _myBottomBar() {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        // sets the background color of the `BottomNavigationBar`
-        canvasColor: mPrimaryColor,
-        // sets the active color of the `BottomNavigationBar` if `Brightness` is light
-        primaryColor: Colors.red,
-      ),
-      child: BottomAppBar(
-        color: mPrimaryColor,
-        shape: const CircularNotchedRectangle(),
-        child: SizedBox(
-          height: _sizeConfig.blockVertical! * 8,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/list_goals');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.add_reaction,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/laporan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.restore_page_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 26,
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pemasukan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_down_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pengeluaran');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_up_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  FloatingActionButton _myFloat() {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/home');
-      },
-      backgroundColor: mYellowColor,
-      child: const Icon(Icons.home),
-      tooltip: 'Home',
-    );
   }
 }

@@ -26,7 +26,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  bloc: null
+  bloc: any
   carousel_slider: ^4.0.0
   cloud_firestore: ^3.1.6
   firebase_messaging: ^11.2.13
@@ -48,8 +48,7 @@ dependencies:
   url_launcher: ^6.0.20
   webview_flutter: ^3.0.1
   month_year_picker: ^0.1.0+1
-  workmanager:
-  flutter_local_notifications:
+  flutter_local_notifications: any
   timezone: ^0.8.0
 
 dev_dependencies:

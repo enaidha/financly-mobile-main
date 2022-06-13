@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../main.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
 
@@ -30,7 +32,8 @@ class _LoginPageState extends State<LoginPage> {
           _editEmailController.text, _editPasswordController.text, context);
 
       if (isValid) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
       } else {
         var snackbar = SnackBar(
           content: Text(
@@ -52,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await services.signInwithGoogle();
       User? user = FirebaseAuth.instance.currentUser;
-      SharedPreferences pref = await SharedPreferences.getInstance();
+      SharedPreferences pref = preferences;
 
       pref.setString('user_id', user!.uid);
       pref.setString('name', user.displayName!);
@@ -60,10 +63,11 @@ class _LoginPageState extends State<LoginPage> {
       pref.setString('username', user.email!);
       pref.setString('photo_url', user.photoURL!);
       pref.setBool('is_google', true);
-
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      print("xxx ${pref.getString('user_id')}");
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/dashboard', (route) => false);
     } catch (e) {
-      print('auth error : '+e.toString());
+      print('auth error : ' + e.toString());
       if (e is FirebaseAuthException) {
         var snackbar = SnackBar(
           content: Text(
@@ -78,16 +82,16 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(snackbar);
       }
       var snackbar = SnackBar(
-          content: Text(
-            'Terjadi kesalahan',
-            style: mCardTitleStyle.copyWith(
-              fontSize: _sizeConfig.blockHorizontal! * 4,
-              fontWeight: FontWeight.w400,
-            ),
+        content: Text(
+          'Terjadi kesalahan',
+          style: mCardTitleStyle.copyWith(
+            fontSize: _sizeConfig.blockHorizontal! * 4,
+            fontWeight: FontWeight.w400,
           ),
-          backgroundColor: mDangerColor,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(snackbar);
+        ),
+        backgroundColor: mDangerColor,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackbar);
     }
   }
 

@@ -10,6 +10,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:progress_indicator/progress_indicator.dart';
 
+import '../main.dart';
+
 class DetailGoalsPage extends StatefulWidget {
   const DetailGoalsPage({Key? key}) : super(key: key);
 
@@ -19,31 +21,31 @@ class DetailGoalsPage extends StatefulWidget {
 
 class _DetailGoalsPageState extends State<DetailGoalsPage> {
   final SizeConfig _sizeConfig = SizeConfig();
-  String? uuid;
   SharedPreferences? pref;
-  String? uid = '';
+  String? uid;
   CollectionReference users = FirebaseFirestore.instance.collection('users');
   DateTime now = DateTime.now();
   double _progres = 0.0;
   double _appendProgres = 0.0;
   double _sisaTarget = 0.0;
 
-  getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
+  getPref() {
     pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
-    setState(() {
-      var arg = ModalRoute.of(context)!.settings.arguments as GoalsArgument;
-      uuid = arg.goalsId;
-      uid = preferences.getString('user_id')!;
+    Future.delayed(Duration(seconds: 0)).then((value) {
+      setState(() {
+        uid = preferences.getString('user_id')!;
+        print(uid);
+        args = ModalRoute.of(context)!.settings.arguments as GoalsArgument;
+      });
     });
   }
 
+  late GoalsArgument args;
+
   @override
   void initState() {
-    super.initState();
     getPref();
+    super.initState();
   }
 
   Color getColor(Set<MaterialState> states) {
@@ -61,117 +63,132 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
   @override
   Widget build(BuildContext context) {
     _sizeConfig.init(context);
-    final args = ModalRoute.of(context)!.settings.arguments as GoalsArgument;
-
     return Scaffold(
       appBar: _appBar(),
       body: SingleChildScrollView(
-        child: FutureBuilder<DocumentSnapshot>(
-            future:
-                users.doc(uid!).collection('goals').doc(args.goalsId!).get(),
-            builder: (context, snapGoals) {
-              if (snapGoals.hasData) {
-                Map<String, dynamic> data =
-                    snapGoals.data!.data() as Map<String, dynamic>;
-                return Column(
-                  children: [
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: users
-                          .doc(uid!)
-                          .collection('goals')
-                          .doc(snapGoals.data!.id)
-                          .snapshots(),
-                      builder: (context, snap) {
-                        print('snap :' + snap.data!.get('nama'));
-                        _appendProgres = 100.0 / data['deadline_bulan'];
-                        print('append progres : $_appendProgres');
-                        return StreamBuilder<QuerySnapshot>(
-                            stream: users
-                                .doc(uid!)
-                                .collection('goals')
-                                .doc(args.goalsId!)
-                                .collection('checklistgoals')
-                                .orderBy('deadline_bulanan')
-                                .snapshots(),
-                            builder: (context, snapSisa) {
-                              num totalDone = 0;
-                              for (var i = 0;
-                                  i < snapSisa.data!.docs.length;
-                                  i++) {
-                                if (snapSisa.data!.docs
-                                        .elementAt(i)['status_pembayaran'] !=
+        child: uid == null
+            ? const SizedBox.shrink()
+            : FutureBuilder<DocumentSnapshot>(
+                future: users
+                    .doc(uid!)
+                    .collection('goals')
+                    .doc(args.goalsId!)
+                    .get(),
+                builder: (context, snapGoals) {
+                  if (snapGoals.hasData) {
+                    Map<String, dynamic> data =
+                        snapGoals.data!.data() as Map<String, dynamic>;
+                    return Column(
+                      children: [
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: users
+                              .doc(uid!)
+                              .collection('goals')
+                              .doc(snapGoals.data!.id)
+                              .snapshots(),
+                          builder: (context, snap) {
+                            if (snap.hasData) {
+                              _appendProgres = 100.0 / data['deadline_bulan'];
+                              return StreamBuilder<QuerySnapshot>(
+                                  stream: users
+                                      .doc(uid!)
+                                      .collection('goals')
+                                      .doc(args.goalsId!)
+                                      .collection('checklistgoals')
+                                      .orderBy('deadline_bulanan')
+                                      .snapshots(),
+                                  builder: (context, snapSisa) {
+                                    if (snapSisa.hasData) {
+                                      num totalDone = 0;
+                                      for (var i = 0;
+                                          i < snapSisa.data!.docs.length;
+                                          i++) {
+                                        if (snapSisa.data!.docs.elementAt(
+                                                i)['status_pembayaran'] !=
+                                            'done') {
+                                          totalDone += snapSisa.data!.docs
+                                              .elementAt(
+                                                  i)['jumlah_goals_bulanan'];
+                                        }
+                                      }
+                                      return _detailLayout(
+                                          goalsId: snapGoals.data!.id,
+                                          title: snap.data!.get('nama'),
+                                          target: data['target'].toString(),
+                                          status: data['status'],
+                                          deadline: data['deadline'],
+                                          createdAt: data['created_at'],
+                                          progres: snap.data!.get('progres'),
+                                          sisaTarget: totalDone);
+                                    } else {
+                                      return const SizedBox.shrink();
+                                    }
+                                  });
+                            } else {
+                              return const SizedBox.shrink();
+                            }
+                          },
+                        ),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: users
+                              .doc(uid!)
+                              .collection('goals')
+                              .doc(args.goalsId!)
+                              .collection('checklistgoals')
+                              .orderBy('deadline_bulanan')
+                              .snapshots(),
+                          builder: (context, snap) {
+                            if (snap.hasData) {
+                              int totalDone = 0;
+                              for (var i = 0; i < snap.data!.docs.length; i++) {
+                                if (snap.data!.docs
+                                        .elementAt(i)['status_pembayaran'] ==
                                     'done') {
-                                  totalDone += snapSisa.data!.docs
+                                  totalDone++;
+                                } else {
+                                  _sisaTarget += snap.data!.docs
                                       .elementAt(i)['jumlah_goals_bulanan'];
                                 }
                               }
-                              return _detailLayout(
-                                  goalsId: snapGoals.data!.id,
-                                  title: snap.data!.get('nama'),
-                                  target: data['target'].toString(),
-                                  status: data['status'],
-                                  deadline: data['deadline'],
-                                  createdAt: data['created_at'],
-                                  progres: snap.data!.get('progres'),
-                                  sisaTarget: totalDone);
-                            });
-                      },
-                    ),
-                    StreamBuilder<QuerySnapshot>(
-                      stream: users
-                          .doc(uid!)
-                          .collection('goals')
-                          .doc(args.goalsId!)
-                          .collection('checklistgoals')
-                          .orderBy('pembayaran')
-                          .snapshots(),
-                      builder: (context, snap) {
-                        int totalDone = 0;
-                        for (var i = 0; i < snap.data!.docs.length; i++) {
-                          if (snap.data!.docs
-                                  .elementAt(i)['status_pembayaran'] ==
-                              'done') {
-                            totalDone++;
-                          } else {
-                            _sisaTarget += snap.data!.docs
-                                .elementAt(i)['jumlah_goals_bulanan'];
-                          }
-                        }
-                        _progres = (100.0 / snap.data!.docs.length) * totalDone;
-                        print('check progres : $_progres');
-                        // print('check data : ' +
-                        //     snap.data!.docs
-                        //         .elementAt(0)['status_pembayaran']
-                        //         .toString());
-                        if (snap.hasData) {
-                          return Column(
-                            children: snap.data!.docs
-                                .map((e) => _checkList(
-                                    e['pembayaran'],
-                                    e['deadline_bulanan'],
-                                    e['jumlah_goals_bulanan'],
-                                    e['status_pembayaran'],
-                                    args.goalsId!,
-                                    e.id))
-                                .toList(),
-                          );
-                        } else {
-                          return Center(
-                              child: Text('Checklist tidak tersedia.',
-                                  style: mCardTitleStyle.copyWith(
-                                      fontSize:
-                                          _sizeConfig.blockHorizontal! * 4,
-                                      fontWeight: FontWeight.w400,
-                                      color: mDangerColor)));
-                        }
-                      },
-                    )
-                  ],
-                );
-              } else {
-                return Container();
-              }
-            }),
+                              _progres =
+                                  (100.0 / snap.data!.docs.length) * totalDone;
+                              // print('check data : ' +
+                              //     snap.data!.docs
+                              //         .elementAt(0)['status_pembayaran']
+                              //         .toString());
+                              if (snap.hasData) {
+                                return Column(
+                                  children: snap.data!.docs
+                                      .map((e) => _checkList(
+                                          e['pembayaran'],
+                                          e['deadline_bulanan'],
+                                          e['jumlah_goals_bulanan'],
+                                          e['status_pembayaran'],
+                                          args.goalsId!,
+                                          e.id))
+                                      .toList(),
+                                );
+                              } else {
+                                return Center(
+                                    child: Text('Checklist tidak tersedia.',
+                                        style: mCardTitleStyle.copyWith(
+                                            fontSize:
+                                                _sizeConfig.blockHorizontal! *
+                                                    4,
+                                            fontWeight: FontWeight.w400,
+                                            color: mDangerColor)));
+                              }
+                            } else {
+                              return const SizedBox.shrink();
+                            }
+                          },
+                        )
+                      ],
+                    );
+                  } else {
+                    return Container();
+                  }
+                }),
       ),
       //  StreamBuilder<QuerySnapshot>(
       //     stream: users
@@ -244,7 +261,6 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
             onChanged: statusPembayaran == 'undone'
                 ? (bool? value) {
                     int bayarKe = int.parse(pembayaranKe.split('-')[1]);
-                    print('pembayaran ke : $bayarKe');
                     save(goalsId, id, bayarKe);
                     setState(() {
                       isChecked = true;
@@ -271,7 +287,6 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
     // var month = int.parse(deadline) - int.parse(createdAt);
     // var perbulan = (int.parse(target) / month).toStringAsFixed(0);
 
-    print('progres : $progres');
     // print('sisa target : ' + sisaTarget);
     // double sisaTarget = (double.parse(target) * progres.toDouble()) / 100;
     return Center(
@@ -406,8 +421,6 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
   }
 
   save(String goalsId, String doc, int bayarKe) {
-    print('check : $doc');
-    print('progress : ' + (_appendProgres * bayarKe).toString());
     users
         .doc(uid!)
         .collection('goals')

@@ -7,6 +7,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
+import '../main.dart';
+
 class PemasukanPage extends StatefulWidget {
   const PemasukanPage({Key? key}) : super(key: key);
 
@@ -22,13 +24,13 @@ class _PemasukanPageState extends State<PemasukanPage> {
   final TextEditingController _editNominalController = TextEditingController();
   CollectionReference users = FirebaseFirestore.instance.collection('users');
 
-  getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+  getPref() {
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
+      uid = pref.getString('user_id')!;
     });
   }
 
@@ -108,8 +110,6 @@ class _PemasukanPageState extends State<PemasukanPage> {
         backgroundColor: mPrimaryColor,
       );
       ScaffoldMessenger.of(context).showSnackBar(snackbar);
-
-      Navigator.pop(context);
 
       // tabungan.get().then((value) {
       //   if (value.size == 0) {

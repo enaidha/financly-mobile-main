@@ -3,9 +3,11 @@ import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/constants.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
+import 'package:finance_plan/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:month_year_picker/month_year_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LaporanPage extends StatefulWidget {
@@ -21,6 +23,21 @@ class _LaporanPageState extends State<LaporanPage> {
   String? uid = '';
   CollectionReference users = FirebaseFirestore.instance.collection('users');
   int _filterBulan = 0;
+  List<String> bulanToString = const [
+    "00",
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10",
+    "11",
+    "12"
+  ];
   int _filterTahun = 0;
   String _selectedBulan = "0";
   String _selectedTahun = "0";
@@ -31,12 +48,12 @@ class _LaporanPageState extends State<LaporanPage> {
   DateTime now = DateTime.now();
 
   getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
+      uid = pref.getString('user_id')!;
     });
   }
 
@@ -47,7 +64,7 @@ class _LaporanPageState extends State<LaporanPage> {
   }
 
   List<DropdownMenuItem<String>> get _dropdownYearItem {
-    List<DropdownMenuItem<String>> menuItems = [
+    List<DropdownMenuItem<String>> menuItems = const [
       DropdownMenuItem(child: Text("Pilih Tahun"), value: "0"),
       DropdownMenuItem(child: Text("2022"), value: "2022"),
       DropdownMenuItem(child: Text("2023"), value: "2023"),
@@ -58,7 +75,7 @@ class _LaporanPageState extends State<LaporanPage> {
   }
 
   List<DropdownMenuItem<String>> get _dropdownMonthItem {
-    List<DropdownMenuItem<String>> menuItems = [
+    List<DropdownMenuItem<String>> menuItems = const [
       DropdownMenuItem(child: Text("Pilih Bulan"), value: "0"),
       DropdownMenuItem(child: Text("Januari"), value: "1"),
       DropdownMenuItem(child: Text("Februari"), value: "2"),
@@ -95,7 +112,8 @@ class _LaporanPageState extends State<LaporanPage> {
                   //     icon: const Icon(Icons.format_list_numbered)),
                   IconButton(
                       onPressed: () {
-                        _filterYearMonth();
+                        //_filterYearMonth();
+                        _datePicker(context: context);
                       },
                       icon: const Icon(Icons.format_align_justify)),
                   InkWell(
@@ -130,155 +148,164 @@ class _LaporanPageState extends State<LaporanPage> {
                 ],
               ),
             ),
-            StreamBuilder<QuerySnapshot>(
-                stream: _filterTahun > 0 &&
-                        _filterBulan == 0 &&
-                        _filterLaporan.contains('Semua')
-                    ? users
-                        .doc(uid!)
-                        .collection('laporan')
-                        .where('year_created', isEqualTo: _filterTahun)
-                        .orderBy('nominal', descending: _sort)
-                        .snapshots()
-                    : _filterTahun > 0 &&
-                            _filterBulan > 0 &&
+            uid == null || uid!.isEmpty
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : StreamBuilder<QuerySnapshot>(
+                    stream: _filterTahun > 0 &&
+                            _filterBulan == 0 &&
                             _filterLaporan.contains('Semua')
                         ? users
                             .doc(uid!)
                             .collection('laporan')
-                            .where('year_created', isEqualTo: _filterTahun)
-                            .where('month_created', isEqualTo: _filterBulan)
+                            .where('year_created',
+                                isEqualTo: _filterTahun.toString())
                             .orderBy('nominal', descending: _sort)
                             .snapshots()
-                        : _filterTahun == 0 &&
+                        : _filterTahun > 0 &&
                                 _filterBulan > 0 &&
                                 _filterLaporan.contains('Semua')
                             ? users
                                 .doc(uid!)
                                 .collection('laporan')
-                                .where('month_created', isEqualTo: _filterBulan)
+                                .where('year_created',
+                                    isEqualTo: _filterTahun.toString())
+                                .where('month_created',
+                                    isEqualTo: bulanToString[_filterBulan])
                                 .orderBy('nominal', descending: _sort)
                                 .snapshots()
                             : _filterTahun == 0 &&
-                                    _filterBulan == 0 &&
-                                    !_filterLaporan.contains('Semua')
+                                    _filterBulan > 0 &&
+                                    _filterLaporan.contains('Semua')
                                 ? users
                                     .doc(uid!)
                                     .collection('laporan')
-                                    .where('is_pemasukan',
-                                        isEqualTo: _filterPemasukan)
+                                    .where('month_created',
+                                        isEqualTo: bulanToString[_filterBulan])
                                     .orderBy('nominal', descending: _sort)
                                     .snapshots()
-                                : _filterTahun > 0 &&
+                                : _filterTahun == 0 &&
                                         _filterBulan == 0 &&
                                         !_filterLaporan.contains('Semua')
                                     ? users
                                         .doc(uid!)
                                         .collection('laporan')
-                                        .where('year_created',
-                                            isEqualTo: _filterTahun)
                                         .where('is_pemasukan',
                                             isEqualTo: _filterPemasukan)
                                         .orderBy('nominal', descending: _sort)
                                         .snapshots()
                                     : _filterTahun > 0 &&
-                                            _filterBulan > 0 &&
+                                            _filterBulan == 0 &&
                                             !_filterLaporan.contains('Semua')
                                         ? users
                                             .doc(uid!)
                                             .collection('laporan')
                                             .where('year_created',
-                                                isEqualTo: _filterTahun)
-                                            .where('month_created',
-                                                isEqualTo: _filterBulan)
+                                                isEqualTo:
+                                                    _filterTahun.toString())
                                             .where('is_pemasukan',
                                                 isEqualTo: _filterPemasukan)
                                             .orderBy('nominal',
                                                 descending: _sort)
                                             .snapshots()
-                                        : _filterTahun == 0 &&
+                                        : _filterTahun > 0 &&
                                                 _filterBulan > 0 &&
                                                 !_filterLaporan
                                                     .contains('Semua')
                                             ? users
                                                 .doc(uid!)
                                                 .collection('laporan')
+                                                .where('year_created',
+                                                    isEqualTo:
+                                                        _filterTahun.toString())
                                                 .where('month_created',
-                                                    isEqualTo: _filterBulan)
+                                                    isEqualTo: bulanToString[
+                                                        _filterBulan])
                                                 .where('is_pemasukan',
                                                     isEqualTo: _filterPemasukan)
                                                 .orderBy('nominal',
                                                     descending: _sort)
                                                 .snapshots()
-                                            : users
-                                                .doc(uid!)
-                                                .collection('laporan')
-                                                .orderBy('nominal',
-                                                    descending: _sort)
-                                                .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data!.size > 0) {
-                    if (_filterTahun == 0 &&
-                        _filterBulan == 0 &&
-                        _filterLaporan.contains('Semua')) {
-                      var date = DateTime.now();
-                      String now = date.toString().split('.')[0];
+                                            : _filterTahun == 0 &&
+                                                    _filterBulan > 0 &&
+                                                    !_filterLaporan
+                                                        .contains('Semua')
+                                                ? users
+                                                    .doc(uid!)
+                                                    .collection('laporan')
+                                                    .where('month_created',
+                                                        isEqualTo:
+                                                            bulanToString[
+                                                                _filterBulan])
+                                                    .where('is_pemasukan',
+                                                        isEqualTo:
+                                                            _filterPemasukan)
+                                                    .orderBy('nominal',
+                                                        descending: _sort)
+                                                    .snapshots()
+                                                : users
+                                                    .doc(uid!)
+                                                    .collection('laporan')
+                                                    .orderBy('nominal',
+                                                        descending: _sort)
+                                                    .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.size > 0) {
+                        if (_filterLaporan.contains('Semua')) {
+                          var date = DateTime.now();
+                          String now = date.toString().split('.')[0];
 
-                      num totalPemasukan = 0;
-                      num totalPengeluaran = 0;
+                          num totalPemasukan = 0;
+                          num totalPengeluaran = 0;
 
-                      for (var i = 0; i < snapshot.data!.size; i++) {
-                        if (snapshot.data!.docs[i].get('is_pemasukan')) {
-                          totalPemasukan +=
-                              snapshot.data!.docs[i].get('nominal');
+                          for (var i = 0; i < snapshot.data!.size; i++) {
+                            if (snapshot.data!.docs[i].get('is_pemasukan')) {
+                              totalPemasukan +=
+                                  snapshot.data!.docs[i].get('nominal');
+                            } else {
+                              totalPengeluaran +=
+                                  snapshot.data!.docs[i].get('nominal');
+                            }
+                          }
+
+                          return Column(
+                            children: [
+                              _card(
+                                  nominal: totalPemasukan.toString(),
+                                  judul: "Total Pemasukan",
+                                  isPemasukan: true,
+                                  waktu: now),
+                              _card(
+                                  nominal: totalPengeluaran.toString(),
+                                  judul: "Total Pengeluaran",
+                                  isPemasukan: false,
+                                  waktu: now),
+                            ],
+                          );
                         } else {
-                          totalPengeluaran +=
-                              snapshot.data!.docs[i].get('nominal');
+                          return Column(
+                            children: snapshot.data!.docs
+                                .map((e) => _card(
+                                    nominal: e['nominal'].toString(),
+                                    judul: e['judul'],
+                                    isPemasukan: e['is_pemasukan'],
+                                    waktu: e['created_at']))
+                                .toList(),
+                          );
                         }
+                      } else {
+                        return Center(
+                          child: Text(
+                            'Data tidak ada.',
+                            style: mRowTextStyle,
+                          ),
+                        );
                       }
-
-                      return Column(
-                        children: [
-                          _card(
-                              nominal: totalPemasukan.toString(),
-                              judul: "Total Pemasukan",
-                              isPemasukan: true,
-                              waktu: now),
-                          _card(
-                              nominal: totalPengeluaran.toString(),
-                              judul: "Total Pengeluaran",
-                              isPemasukan: false,
-                              waktu: now),
-                        ],
-                      );
-                    } else {
-                      return Column(
-                        children: snapshot.data!.docs
-                            .map((e) => _card(
-                                nominal: e['nominal'].toString(),
-                                judul: e['judul'],
-                                isPemasukan: e['is_pemasukan'],
-                                waktu: e['created_at']))
-                            .toList(),
-                      );
-                    }
-                  } else {
-                    return Container(
-                      child: Center(
-                        child: Text(
-                          'Data tidak ada.',
-                          style: mRowTextStyle,
-                        ),
-                      ),
-                    );
-                  }
-                })
+                    })
           ],
         ),
       ),
-      bottomNavigationBar: _myBottomBar(),
-      floatingActionButton: _myFloat(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -292,92 +319,6 @@ class _LaporanPageState extends State<LaporanPage> {
           fontSize: _sizeConfig.blockHorizontal! * 6,
         ),
       ),
-    );
-  }
-
-  Widget _myBottomBar() {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        // sets the background color of the `BottomNavigationBar`
-        canvasColor: mPrimaryColor,
-        // sets the active color of the `BottomNavigationBar` if `Brightness` is light
-        primaryColor: Colors.red,
-      ),
-      child: BottomAppBar(
-        color: mPrimaryColor,
-        shape: const CircularNotchedRectangle(),
-        child: SizedBox(
-          height: _sizeConfig.blockVertical! * 8,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/list_goals');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.add_reaction,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/laporan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.restore_page_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 26,
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pemasukan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_down_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pengeluaran');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_up_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  FloatingActionButton _myFloat() {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/home');
-      },
-      backgroundColor: mYellowColor,
-      child: const Icon(Icons.home),
-      tooltip: 'Home',
     );
   }
 
@@ -512,381 +453,110 @@ class _LaporanPageState extends State<LaporanPage> {
         });
   }
 
+  Stream<QuerySnapshot<Object?>>? getStream() {}
+
   _filterYearMonth() {
     showModalBottomSheet(
         context: context,
         builder: (BuildContext context) {
-          return SizedBox(
-            height: _sizeConfig.blockHorizontal! * 70,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: ListView(children: [
-                DropdownButton(
-                    items: _dropdownYearItem,
-                    value: _selectedTahun,
-                    onChanged: (String? value) {
-                      print('selected year : $value');
-                      setState(() {
-                        _selectedTahun = value!;
-                        _filterTahun = int.parse(value);
-                      });
-                    }),
-                DropdownButton(
-                    items: _dropdownMonthItem,
-                    value: _selectedBulan,
-                    onChanged: (String? value) {
-                      print('selected month : $value');
-                      setState(() {
-                        _selectedBulan = value!;
-                        _filterBulan = int.parse(value);
-                      });
-                    }),
-                const SizedBox(
-                  height: 12,
-                ),
-                TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: mPrimaryColor,
-                    ),
-                    child: Text('Filter',
-                        style: mInputStyle.copyWith(
-                            fontSize: _sizeConfig.blockVertical! * 2.6,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white)))
-              ]),
-            ),
-          );
+          return StatefulBuilder(builder: (context, StateSetter setState) {
+            return SizedBox(
+              height: _sizeConfig.blockHorizontal! * 70,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: ListView(children: [
+                  DropdownButton(
+                      items: _dropdownYearItem,
+                      value: _selectedTahun,
+                      onChanged: (String? value) {
+                        print('selected year : $value');
+                        this.setState(() {
+                          setState(() {
+                            _selectedTahun = value!;
+                            _filterTahun = int.parse(value);
+                          });
+                        });
+                      }),
+                  DropdownButton(
+                      items: _dropdownMonthItem,
+                      value: _selectedBulan,
+                      onChanged: (String? value) {
+                        print('selected month : $value');
+                        this.setState(() {
+                          setState(() {
+                            _selectedBulan = value!;
+                            _filterBulan = int.parse(value);
+                          });
+                        });
+                      }),
+                  const SizedBox(
+                    height: 12,
+                  ),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: mPrimaryColor,
+                      ),
+                      child: Text('Filter',
+                          style: mInputStyle.copyWith(
+                              fontSize: _sizeConfig.blockVertical! * 2.6,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white)))
+                ]),
+              ),
+            );
+          });
         });
   }
 
-  _filterYear() {
-    showModalBottomSheet(
+  Future<void> _datePicker({
+    required BuildContext context,
+    String? locale,
+  }) async {
+    final localeObj = locale != null ? Locale(locale) : null;
+    final selected = await showMonthYearPicker(
         context: context,
-        builder: (BuildContext context) {
-          return SizedBox(
-            height: _sizeConfig.blockHorizontal! * 70,
-            child: ListView(
-              children: [
-                ListTile(
-                  onTap: () {
-                    print('Semua');
-                    setState(() {
-                      _filterTahun = 0;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterTahun == 0 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Semua',
-                      style: mTitleStyle.copyWith(
-                        color: _filterTahun == 0 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                for (var i = 0; i < _arrYear.length; i++) _filterYearCard(i)
-              ],
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2022),
+        lastDate: DateTime(2030),
+        locale: localeObj,
+        builder: (context, widget) {
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  widget ?? const SizedBox.shrink(),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _filterBulan = 0;
+                        _filterTahun = 0;
+                      });
+                    },
+                    child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12))),
+                        child: Text("Hapus Filter")),
+                  )
+                ],
+              ),
             ),
           );
         });
-  }
 
-  Column _filterYearCard(int i) {
-    return Column(
-      children: [
-        ListTile(
-          onTap: () {
-            print(_arrYear[i]);
-            setState(() {
-              _filterTahun = _arrYear[i];
-            });
-            Navigator.pop(context);
-          },
-          selected: _filterTahun == _arrYear[i] ? true : false,
-          selectedColor: mPrimaryColor,
-          title: Text(_arrYear[i].toString(),
-              style: mTitleStyle.copyWith(
-                color:
-                    _filterTahun == _arrYear[i] ? mPrimaryColor : Colors.black,
-                fontSize: 14,
-              )),
-        ),
-        i < (_arrYear.length - 1)
-            ? const Divider(
-                color: Colors.black,
-              )
-            : Container(),
-      ],
-    );
-  }
-
-  _filterMonth() {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          height: _sizeConfig.blockVertical! * 70,
-          color: Colors.white,
-          child: Center(
-            child: ListView(
-              children: <Widget>[
-                ListTile(
-                  onTap: () {
-                    print('Semua');
-                    setState(() {
-                      _filterBulan = 0;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 0 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Semua',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 0 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Januari');
-                    setState(() {
-                      _filterBulan = 1;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 1 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Januari',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 1 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Februari');
-                    setState(() {
-                      _filterBulan = 2;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 2 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Februari',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 2 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Maret');
-                    setState(() {
-                      _filterBulan = 3;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 3 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Maret',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 3 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('April');
-                    setState(() {
-                      _filterBulan = 4;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 4 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('April',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 4 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Mei');
-                    setState(() {
-                      _filterBulan = 5;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 5 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Mei',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 5 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Juni');
-                    setState(() {
-                      _filterBulan = 6;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 6 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Juni',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 6 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Juli');
-                    setState(() {
-                      _filterBulan = 7;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 7 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Juli',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 7 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Agustus');
-                    setState(() {
-                      _filterBulan = 8;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 8 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Agustus',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 8 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('September');
-                    setState(() {
-                      _filterBulan = 9;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 9 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('September',
-                      style: mTitleStyle.copyWith(
-                        color: _filterBulan == 9 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Oktober');
-                    setState(() {
-                      _filterBulan = 10;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 10 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Oktober',
-                      style: mTitleStyle.copyWith(
-                        color:
-                            _filterBulan == 10 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('November');
-                    setState(() {
-                      _filterBulan = 11;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 11 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('November',
-                      style: mTitleStyle.copyWith(
-                        color:
-                            _filterBulan == 11 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-                const Divider(
-                  color: Colors.black,
-                ),
-                ListTile(
-                  onTap: () {
-                    print('Desember');
-                    setState(() {
-                      _filterBulan = 12;
-                    });
-                    Navigator.pop(context);
-                  },
-                  selected: _filterBulan == 12 ? true : false,
-                  selectedColor: mPrimaryColor,
-                  title: Text('Desember',
-                      style: mTitleStyle.copyWith(
-                        color:
-                            _filterBulan == 12 ? mPrimaryColor : Colors.black,
-                        fontSize: 14,
-                      )),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    if (selected != null) {
+      setState(() {
+        //_selectedDate = selected;
+        _filterBulan = selected.month;
+        _filterTahun = selected.year;
+      });
+    }
   }
 }

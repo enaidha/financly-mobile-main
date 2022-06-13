@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
+import 'package:finance_plan/main.dart';
 import 'package:finance_plan/models/user_argument.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -32,13 +33,13 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
   String _nominal = '0';
   DateTime? _selectedDate;
 
-  getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+  getPref() {
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
+      uid = pref.getString('user_id')!;
     });
   }
 
@@ -108,7 +109,8 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
         // var targetMonth = int.parse(_editNominalController.text) /
         //     (deadlineResult - belumDibayar);
         var targetMonth =
-            (int.parse(_editNominalController.text) - totalTerbayar) / (deadlineResult - dibayar);
+            (int.parse(_editNominalController.text) - totalTerbayar) /
+                (deadlineResult - dibayar);
         int appendMonth = 1;
         // int result = deadlineResult;
         int result = deadlineResult - dibayar;

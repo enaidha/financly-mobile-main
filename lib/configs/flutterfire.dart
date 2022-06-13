@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:finance_plan/main.dart';
 import 'package:finance_plan/models/user.dart';
 import 'package:finance_plan/pages/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +10,7 @@ Future signIn(String email, String password, dynamic context) async {
   try {
     var user = await FirebaseAuth.instance
         .signInWithEmailAndPassword(email: email, password: password);
-    SharedPreferences pref = await SharedPreferences.getInstance();
+    SharedPreferences pref = preferences;
 
     FirebaseFirestore.instance
         .collection('users')
@@ -60,7 +61,6 @@ Future register({
 
 Future<User?> updateAccount(String name) async {
   try {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
     User? user = FirebaseAuth.instance.currentUser;
     user?.updateDisplayName(name);
     if (user != null) {
@@ -79,7 +79,6 @@ Future<User?> updateAccount(String name) async {
 
 Future<User?> updateProfilePhoto(String photoUrl) async {
   try {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
     User? user = FirebaseAuth.instance.currentUser;
     user?.updatePhotoURL(photoUrl);
     if (user != null) {
@@ -99,8 +98,8 @@ Future<User?> updateProfilePhoto(String photoUrl) async {
 Future logout(BuildContext context) async {
   FirebaseAuth _auth = FirebaseAuth.instance;
   try {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    await preferences.clear();
+    SharedPreferences pref = preferences;
+    await pref.clear();
 
     await _auth.signOut().then((value) {
       Navigator.pushAndRemoveUntil(

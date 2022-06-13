@@ -22,6 +22,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:progress_indicator/progress_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../main.dart';
+
 class BaseScreen extends StatefulWidget {
   const BaseScreen({Key? key}) : super(key: key);
 
@@ -61,23 +63,16 @@ class _BaseScreenState extends State<BaseScreen> {
   ];
 
   Future<String> getPref() async {
-    print('Load preferences');
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
-    String userId = preferences.getString('user_id')!;
+    SharedPreferences pref = preferences;
+    pref = pref;
+    String userId = pref.getString('user_id')!;
 
-    print('us $userId');
-    name = preferences.getString('name')!;
-    email = preferences.getString('email')!;
-    photoUrl = preferences.containsKey('photo_url')
-        ? preferences.getString('photo_url')
-        : '-';
-    _isGoogle = preferences.containsKey('is_google')
-        ? preferences.getBool('is_google')!
-        : false;
-    print('Completed preferences');
+    name = pref.getString('name')!;
+    email = pref.getString('email')!;
+    photoUrl =
+        pref.containsKey('photo_url') ? pref.getString('photo_url') : '-';
+    _isGoogle =
+        pref.containsKey('is_google') ? pref.getBool('is_google')! : false;
 
     return userId;
   }
@@ -104,7 +99,7 @@ class _BaseScreenState extends State<BaseScreen> {
   }
 
   _logout() async {
-    SharedPreferences pref = await SharedPreferences.getInstance();
+    SharedPreferences pref = preferences;
     if (_isGoogle) {
       AuthServices services = AuthServices();
 
@@ -139,8 +134,6 @@ class _BaseScreenState extends State<BaseScreen> {
   Widget build(BuildContext context) {
     _sizeConfig.init(context);
 
-    print('Build');
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -151,7 +144,6 @@ class _BaseScreenState extends State<BaseScreen> {
               create: (context) => UserCubit(),
               child: BlocBuilder<UserCubit, UserState>(
                 builder: (context, state) {
-                  print('user id: ${snap.data}');
                   return SingleChildScrollView(
                     child: SizedBox(
                       width: _sizeConfig.screenWidth,
@@ -167,9 +159,6 @@ class _BaseScreenState extends State<BaseScreen> {
           },
         ),
       ),
-      bottomNavigationBar: _myBottomBar(),
-      floatingActionButton: _myFloat(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -179,7 +168,6 @@ class _BaseScreenState extends State<BaseScreen> {
       setState(() {
         _currentSaldo = value.get('current_saldo');
       });
-      print('saldos $_currentSaldo');
     });
     return Expanded(
       child: Stack(
@@ -690,10 +678,13 @@ class _BaseScreenState extends State<BaseScreen> {
         ),
         Padding(
           padding: EdgeInsets.only(
-              top: _sizeConfig.blockVertical! * 2,
-              left: _sizeConfig.blockVertical! * 1),
+            top: _sizeConfig.blockVertical! * 2,
+          ),
           child: Text(
-            name != null ? '$name\n' : 'User\n',
+            name != null
+                ? '${name!.length > 18 ? name!.substring(0, 18) : name}\n'
+                : 'User\n',
+            overflow: TextOverflow.ellipsis,
             style: mRowTextStyle.copyWith(
                 fontSize: _sizeConfig.blockHorizontal! * 4,
                 fontWeight: FontWeight.w600),
@@ -723,92 +714,6 @@ class _BaseScreenState extends State<BaseScreen> {
               )),
         )
       ],
-    );
-  }
-
-  Widget _myBottomBar() {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        // sets the background color of the `BottomNavigationBar`
-        canvasColor: mPrimaryColor,
-        // sets the active color of the `BottomNavigationBar` if `Brightness` is light
-        primaryColor: Colors.red,
-      ),
-      child: BottomAppBar(
-        color: mPrimaryColor,
-        shape: const CircularNotchedRectangle(),
-        child: SizedBox(
-          height: _sizeConfig.blockVertical! * 8,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/list_goals');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.add_reaction,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/laporan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.restore_page_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 26,
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pemasukan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_down_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pengeluaran');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_up_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  FloatingActionButton _myFloat() {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/home');
-      },
-      backgroundColor: mYellowColor,
-      child: const Icon(Icons.home),
-      tooltip: 'Home',
     );
   }
 }

@@ -3,12 +3,13 @@ import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
-import '../models/user_argument.dart';
+import 'package:timezone/timezone.dart' as tz;
+import '../main.dart';
 
 class GoalsPage extends StatefulWidget {
   const GoalsPage({Key? key}) : super(key: key);
@@ -32,12 +33,12 @@ class _GoalsPageState extends State<GoalsPage> {
   DateTime? _selectedDate;
 
   getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('name : ' + preferences.getString('name')!);
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('name : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
+      uid = pref.getString('user_id')!;
     });
   }
 
@@ -94,7 +95,7 @@ class _GoalsPageState extends State<GoalsPage> {
             now.toString().split('-')[1] +
             '-' +
             now.toString().split('-')[2],
-      }).then((value) {
+      }).then((value) async {
         uuid = value.id;
         print("uuid : " + uuid.toString());
 
@@ -109,7 +110,7 @@ class _GoalsPageState extends State<GoalsPage> {
 
           var pembayaranKe = 'Pembayaran ke-' + getMonthTarget.toString();
           var deadlineNextMonth =
-              new DateTime(date.year, date.month + appendMonth, 01);
+              DateTime(date.year, date.month + appendMonth, 01);
           String newDeadlineNextMonth =
               deadlineNextMonth.toString().split('-')[0] +
                   '-' +
@@ -118,7 +119,7 @@ class _GoalsPageState extends State<GoalsPage> {
           var jumlahGoals = targetMonth;
           var status = 'undone';
 
-          users
+          var val = await users
               .doc(uid)
               .collection('goals')
               .doc(uuid)
@@ -129,7 +130,18 @@ class _GoalsPageState extends State<GoalsPage> {
             'deadline_bulanan': newDeadlineNextMonth,
             'status_pembayaran': status,
           });
-
+          await flutterLocalNotificationsPlugin.zonedSchedule(
+              i,
+              pembayaranKe + " " + _editNamaController.text,
+              "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
+              tz.TZDateTime(tz.local, date.year, date.month + appendMonth,
+                  date.day, date.hour, date.minute, date.second),
+              NotificationDetails(
+                  android: AndroidNotificationDetails(val.id, "Pembayaran",
+                      channelDescription: "Pengingat pembayaran dalam 3 hari")),
+              androidAllowWhileIdle: true,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime);
           appendMonth++;
         }
 

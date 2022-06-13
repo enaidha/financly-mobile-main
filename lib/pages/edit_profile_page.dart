@@ -4,6 +4,7 @@ import 'package:finance_plan/configs/flutterfire.dart';
 import 'package:finance_plan/constants/color_constant.dart';
 import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
+import 'package:finance_plan/main.dart';
 import 'package:finance_plan/pages/base_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -39,18 +40,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
   CollectionReference users = FirebaseFirestore.instance.collection('users');
 
   getPref() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    pref = preferences;
-    print('user_id : ' + preferences.getString('user_id')!);
-    print('named : ' + preferences.getString('name')!);
+    SharedPreferences pref = preferences;
+    pref = pref;
+    print('user_id : ' + pref.getString('user_id')!);
+    print('named : ' + pref.getString('name')!);
     setState(() {
-      uid = preferences.getString('user_id')!;
-      name = preferences.getString('name')!;
-      username = preferences.getString('username')!;
-      email = preferences.getString('email')!;
-      photoUrl = preferences.containsKey('photo_url')
-          ? preferences.getString('photo_url')
-          : '-';
+      uid = pref.getString('user_id')!;
+      name = pref.getString('name')!;
+      username = pref.getString('username')!;
+      email = pref.getString('email')!;
+      photoUrl =
+          pref.containsKey('photo_url') ? pref.getString('photo_url') : '-';
       /* password = preferences.getString('password')!; */
     });
   }
