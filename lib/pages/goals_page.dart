@@ -118,7 +118,15 @@ class _GoalsPageState extends State<GoalsPage> {
                   '-01';
           var jumlahGoals = targetMonth;
           var status = 'undone';
-
+          int notifId = date.year +
+              date.month +
+              date.day +
+              date.hour +
+              date.minute +
+              date.second +
+              date.millisecond +
+              date.microsecond +
+              i;
           var val = await users
               .doc(uid)
               .collection('goals')
@@ -129,9 +137,10 @@ class _GoalsPageState extends State<GoalsPage> {
             'jumlah_goals_bulanan': jumlahGoals,
             'deadline_bulanan': newDeadlineNextMonth,
             'status_pembayaran': status,
+            'notif_id': notifId
           });
           await flutterLocalNotificationsPlugin.zonedSchedule(
-              i,
+              notifId,
               pembayaranKe + " " + _editNamaController.text,
               "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
               tz.TZDateTime(tz.local, date.year, date.month, date.day,

@@ -5,9 +5,11 @@ import 'package:finance_plan/constants/style_constant.dart';
 import 'package:finance_plan/main.dart';
 import 'package:finance_plan/models/user_argument.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:timezone/timezone.dart' as tz;
 
 class EditGoalsPage extends StatefulWidget {
   const EditGoalsPage({Key? key}) : super(key: key);
@@ -76,13 +78,20 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
 
   submit(String goalsId) {
     if (_form.currentState!.validate()) {
+      final args = ModalRoute.of(context)!.settings.arguments as GoalsArgument;
+      List<int> yearMonth = [
+        int.parse(args.deadline!.substring(0, 7).split('-')[0]),
+        int.parse(args.deadline!.substring(0, 7).split('-')[1])
+      ];
+      print("Waktu : " + _editWaktuController.text);
+      DateTime dateTarget = DateTime(yearMonth[0], yearMonth[1]);
       var date = DateTime.now();
       String now = date.toString().split('.')[0];
       int deadlineResult = _countDeadline(_editWaktuController.text);
       print('deadline result : $deadlineResult');
       CollectionReference goals = users.doc(uid).collection('goals');
 
-      goals.doc(goalsId).collection('checklistgoals').get().then((value) {
+      goals.doc(goalsId).collection('checklistgoals').get().then((value) async {
         int dibayar = 0;
         int belumDibayar = 0;
         num totalTerbayar = 0;
@@ -97,11 +106,6 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
             belumDibayar++;
             totalBelumDibayar +=
                 value.docs.elementAt(i).get('jumlah_goals_bulanan');
-            goals
-                .doc(goalsId)
-                .collection('checklistgoals')
-                .doc(value.docs.elementAt(i).id)
-                .delete();
           }
         }
 
@@ -115,67 +119,133 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
         // int result = deadlineResult;
         int result = deadlineResult - dibayar;
 
+        print((int.parse(_editNominalController.text) - totalTerbayar));
+
         if (result > 0) {
           print('result > 0 is true');
+          if ((int.parse(_editNominalController.text) - totalTerbayar) > 0) {
+            for (var i = 0; i < value.size; i++) {
+              if (value.docs.elementAt(i).get('status_pembayaran') != 'done') {
+                await flutterLocalNotificationsPlugin
+                    .cancel(value.docs.elementAt(i).get('notif_id'));
+                goals
+                    .doc(goalsId)
+                    .collection('checklistgoals')
+                    .doc(value.docs.elementAt(i).id)
+                    .delete();
+              }
+            }
 
-          int startPembayaran = dibayar;
-          for (var i = 0; i < result; i++) {
-            var getMonthTarget = i + 1;
-            startPembayaran++;
-            print("xxxxx Bulan ke : " + startPembayaran.toString());
-            print("xxxxx Jumlah : " + targetMonth.toString());
+            int startPembayaran = dibayar;
+            date = DateTime(date.year, date.month + startPembayaran, date.day);
+            for (var i = 0; i < result; i++) {
+              var getMonthTarget = i + 1;
+              startPembayaran++;
+              print("xxxxx Bulan ke : " + startPembayaran.toString());
+              print("xxxxx Jumlah : " + targetMonth.toString());
 
-            var pembayaranKe = 'Pembayaran ke-' + startPembayaran.toString();
-            var deadlineNextMonth =
-                DateTime(date.year, date.month + appendMonth, 01);
-            String newDeadlineNextMonth =
-                deadlineNextMonth.toString().split('-')[0] +
-                    '-' +
-                    deadlineNextMonth.toString().split('-')[1] +
-                    '-01';
-            var jumlahGoals = targetMonth;
-            var status = 'undone';
+              var pembayaranKe = 'Pembayaran ke-' + startPembayaran.toString();
+              var deadlineNextMonth =
+                  DateTime(date.year, date.month + appendMonth, 01);
+              String newDeadlineNextMonth =
+                  deadlineNextMonth.toString().split('-')[0] +
+                      '-' +
+                      deadlineNextMonth.toString().split('-')[1] +
+                      '-01';
+              var jumlahGoals = targetMonth;
+              var status = 'undone';
+              int notifId = date.year +
+                  date.month +
+                  date.day +
+                  date.hour +
+                  date.minute +
+                  date.second +
+                  date.millisecond +
+                  date.microsecond +
+                  i;
+              var val =
+                  await goals.doc(goalsId).collection('checklistgoals').add({
+                'pembayaran': pembayaranKe,
+                'jumlah_goals_bulanan': jumlahGoals,
+                'deadline_bulanan': newDeadlineNextMonth,
+                'status_pembayaran': status,
+                'notif_id': notifId
+              });
+              await flutterLocalNotificationsPlugin.zonedSchedule(
+                  notifId,
+                  pembayaranKe + " " + _editNamaController.text,
+                  "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
+                  tz.TZDateTime(tz.local, date.year, date.month, date.day,
+                          date.hour, date.minute, date.second)
+                      .add(Duration(minutes: i + 1)),
+                  NotificationDetails(
+                      android: AndroidNotificationDetails(val.id, "Pembayaran",
+                          channelDescription:
+                              "Pengingat pembayaran dalam 3 hari")),
+                  androidAllowWhileIdle: true,
+                  uiLocalNotificationDateInterpretation:
+                      UILocalNotificationDateInterpretation.absoluteTime);
+              var notif = await users.doc(uid).collection('notif').add({
+                'show': Timestamp.fromDate(date.add(Duration(minutes: i + 1))),
+                'title': pembayaranKe + " " + _editNamaController.text,
+                'body': "Jangan lupa bahwa " +
+                    pembayaranKe +
+                    " tinggal 3 hari lagi",
+              });
+              appendMonth++;
+            }
 
-            goals.doc(goalsId).collection('checklistgoals').add({
-              'pembayaran': pembayaranKe,
-              'jumlah_goals_bulanan': jumlahGoals,
-              'deadline_bulanan': newDeadlineNextMonth,
-              'status_pembayaran': status,
+            goals.doc(goalsId).update({
+              'nama': _editNama ? _newNama : _editNamaController.text,
+              'deadline': _editWaktu
+                  ? _selectedDate.toString()
+                  : _editWaktuController.text.toString().substring(0, 7),
+              'deadline_bulan': deadlineResult,
+              'target': _editTarget
+                  ? int.parse(_nominal)
+                  : int.parse(_editNominalController.text),
+              'updated_at': now,
+              'progres': (dibayar / deadlineResult) * 100
             });
 
-            appendMonth++;
-          }
+            _editNamaController.clear();
+            _editWaktuController.clear();
+            _editNominalController.clear();
 
-          goals.doc(goalsId).update({
-            'nama': _editNama ? _newNama : _editNamaController.text,
-            'deadline': _editWaktu
-                ? _selectedDate.toString()
-                : _editWaktuController.text.toString().substring(0, 7),
-            'deadline_bulan': deadlineResult,
-            'target': _editTarget
-                ? int.parse(_nominal)
-                : int.parse(_editNominalController.text),
-            'updated_at': now
-          });
-
-          _editNamaController.clear();
-          _editWaktuController.clear();
-          _editNominalController.clear();
-
-          var snackbar = SnackBar(
-            content: Text(
-              'Berhasil',
-              style: mCardTitleStyle.copyWith(
-                fontSize: _sizeConfig.blockHorizontal! * 4,
-                fontWeight: FontWeight.w400,
+            var snackbar = SnackBar(
+              content: Text(
+                'Berhasil',
+                style: mCardTitleStyle.copyWith(
+                  fontSize: _sizeConfig.blockHorizontal! * 4,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
-            ),
-            backgroundColor: mPrimaryColor,
-          );
-          ScaffoldMessenger.of(context).showSnackBar(snackbar);
+              backgroundColor: mPrimaryColor,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(snackbar);
 
-          Navigator.pop(context);
-          Navigator.pop(context);
+            Navigator.pop(context);
+            Navigator.pop(context);
+          } else {
+            print('result > 0 is false');
+            _editNamaController.clear();
+            _editWaktuController.clear();
+            _editNominalController.clear();
+
+            var snackbar = SnackBar(
+              content: Text(
+                'Target tidak boleh kurang',
+                style: mCardTitleStyle.copyWith(
+                    fontSize: _sizeConfig.blockHorizontal! * 4,
+                    fontWeight: FontWeight.w400,
+                    color: mDangerColor),
+              ),
+              backgroundColor: mPrimaryColor,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(snackbar);
+
+            Navigator.pop(context);
+          }
         } else {
           print('result > 0 is false');
           _editNamaController.clear();
@@ -204,10 +274,16 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
     required BuildContext context,
     String? locale,
   }) async {
+    final args = ModalRoute.of(context)!.settings.arguments as GoalsArgument;
+    List<int> yearMonth = [
+      int.parse(args.deadline!.substring(0, 7).split('-')[0]),
+      int.parse(args.deadline!.substring(0, 7).split('-')[1])
+    ];
+    DateTime dateTarget = DateTime(yearMonth[0], yearMonth[1]);
     final localeObj = locale != null ? Locale(locale) : null;
     final selected = await showMonthYearPicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDate: _selectedDate ?? dateTarget,
       firstDate: DateTime(2022),
       lastDate: DateTime(2030),
       locale: localeObj,
@@ -325,9 +401,13 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                     await _datePicker(context: context);
                     print('selected date : $_selectedDate');
                     setState(() {
-                      _editWaktu = true;
-                      _editWaktuController.text =
-                          _selectedDate.toString().substring(0, 7);
+                      if (_selectedDate != null) {
+                        if (_selectedDate.toString().length > 4) {
+                          _editWaktu = true;
+                          _editWaktuController.text =
+                              _selectedDate.toString().substring(0, 7);
+                        }
+                      }
                     });
                     // DatePicker.showDatePicker(context,
                     //     showTitleActions: true,
@@ -356,7 +436,6 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 ),
                 child: TextFormField(
                   controller: _editNominalController,
-                  readOnly: true,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                       hintText: 'Masukkan nominal',

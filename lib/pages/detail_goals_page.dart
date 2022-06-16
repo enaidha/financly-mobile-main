@@ -169,16 +169,20 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
                               //         .elementAt(0)['status_pembayaran']
                               //         .toString());
                               if (snap.hasData) {
+                                String? st;
                                 return Column(
-                                  children: snap.data!.docs
-                                      .map((e) => _checkList(
-                                          e['pembayaran'],
-                                          e['deadline_bulanan'],
-                                          e['jumlah_goals_bulanan'],
-                                          e['status_pembayaran'],
-                                          args.goalsId!,
-                                          e.id))
-                                      .toList(),
+                                  children: snap.data!.docs.map((e) {
+                                    var checklist = _checkList(
+                                        e['pembayaran'],
+                                        e['deadline_bulanan'],
+                                        e['jumlah_goals_bulanan'],
+                                        e['status_pembayaran'],
+                                        args.goalsId!,
+                                        e.id,
+                                        st);
+                                    st = e['status_pembayaran'];
+                                    return checklist;
+                                  }).toList(),
                                 );
                               } else {
                                 return Center(
@@ -243,8 +247,17 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
     );
   }
 
-  Container _checkList(String pembayaranKe, String deadline, num nominal,
-      String statusPembayaran, String goalsId, String id) {
+  Container _checkList(
+      String pembayaranKe,
+      String deadline,
+      num nominal,
+      String statusPembayaran,
+      String goalsId,
+      String id,
+      String? statusPembayaranSebelum) {
+    bool isValid = statusPembayaranSebelum != null
+        ? statusPembayaranSebelum != "undone"
+        : true;
     bool isChecked = statusPembayaran == 'undone' ? false : true;
     String nominals = nominal.toStringAsFixed(2);
     return Container(
@@ -276,67 +289,83 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
             fillColor: MaterialStateProperty.resolveWith(getColor),
             onChanged: statusPembayaran == 'undone'
                 ? (bool? value) {
-                    showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                              title: Text(
-                                "Apakah anda yakin?",
-                                style: mInputStyle.copyWith(
-                                    fontSize: _sizeConfig.blockVertical! * 2.6,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black),
-                              ),
-                              actions: [
-                                InkWell(
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        border:
-                                            Border.all(color: mPrimaryColor),
-                                        borderRadius: const BorderRadius.all(
-                                            Radius.circular(12))),
-                                    child: Text(
-                                      "Tidak",
-                                      style: mInputStyle.copyWith(
-                                          fontSize:
-                                              _sizeConfig.blockVertical! * 2,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black),
-                                    ),
-                                  ),
+                    if (isValid) {
+                      showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                                title: Text(
+                                  "Apakah anda yakin?",
+                                  style: mInputStyle.copyWith(
+                                      fontSize:
+                                          _sizeConfig.blockVertical! * 2.6,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.black),
                                 ),
-                                InkWell(
-                                  onTap: () {
-                                    int bayarKe =
-                                        int.parse(pembayaranKe.split('-')[1]);
-                                    save(goalsId, id, bayarKe);
-                                    setState(() {
-                                      isChecked = true;
-                                    });
-                                    Navigator.pop(context);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                        color: mPrimaryColor,
-                                        border:
-                                            Border.all(color: mPrimaryColor),
-                                        borderRadius: const BorderRadius.all(
-                                            Radius.circular(12))),
-                                    child: Text("Yakin",
+                                actions: [
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border:
+                                              Border.all(color: mPrimaryColor),
+                                          borderRadius: const BorderRadius.all(
+                                              Radius.circular(12))),
+                                      child: Text(
+                                        "Tidak",
                                         style: mInputStyle.copyWith(
                                             fontSize:
                                                 _sizeConfig.blockVertical! * 2,
                                             fontWeight: FontWeight.w400,
-                                            color: Colors.white)),
+                                            color: Colors.black),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ));
+                                  InkWell(
+                                    onTap: () {
+                                      int bayarKe =
+                                          int.parse(pembayaranKe.split('-')[1]);
+                                      save(goalsId, id, bayarKe);
+                                      setState(() {
+                                        isChecked = true;
+                                      });
+                                      Navigator.pop(context);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                          color: mPrimaryColor,
+                                          border:
+                                              Border.all(color: mPrimaryColor),
+                                          borderRadius: const BorderRadius.all(
+                                              Radius.circular(12))),
+                                      child: Text("Yakin",
+                                          style: mInputStyle.copyWith(
+                                              fontSize:
+                                                  _sizeConfig.blockVertical! *
+                                                      2,
+                                              fontWeight: FontWeight.w400,
+                                              color: Colors.white)),
+                                    ),
+                                  ),
+                                ],
+                              ));
+                    } else {
+                      var snackbar = SnackBar(
+                        content: Text(
+                          'Selesaikan pembayaran sebelumnya',
+                          style: mCardTitleStyle.copyWith(
+                            fontSize: _sizeConfig.blockHorizontal! * 4,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(snackbar);
+                    }
                   }
                 : null,
           )
@@ -460,6 +489,22 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
                     )),
                 IconButton(
                     onPressed: () async {
+                      await users
+                          .doc(uid)
+                          .collection('goals')
+                          .doc(goalsId)
+                          .collection('checklistgoals')
+                          .get()
+                          // ignore: avoid_function_literals_in_foreach_calls
+                          .then((value) => value.docs.forEach((element) {
+                                users
+                                    .doc(uid)
+                                    .collection('goals')
+                                    .doc(goalsId)
+                                    .collection('checklistgoals')
+                                    .doc(element.id)
+                                    .delete();
+                              }));
                       await users
                           .doc(uid)
                           .collection('goals')

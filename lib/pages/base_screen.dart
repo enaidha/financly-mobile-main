@@ -258,7 +258,7 @@ class _BaseScreenState extends State<BaseScreen> {
                           // .orderBy('created_at', descending: false)
                           .snapshots(),
                       builder: (context, snapGoals) {
-                        if (snapGoals.hasData && snapGoals.data! != null) {
+                        if (snapGoals.hasData) {
                           if (snapGoals.data!.size > 0) {
                             return Column(
                               children: snapGoals.data!.docs
