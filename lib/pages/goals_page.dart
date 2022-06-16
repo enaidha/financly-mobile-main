@@ -134,14 +134,21 @@ class _GoalsPageState extends State<GoalsPage> {
               i,
               pembayaranKe + " " + _editNamaController.text,
               "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
-              tz.TZDateTime(tz.local, date.year, date.month + appendMonth,
-                  date.day, date.hour, date.minute, date.second),
+              tz.TZDateTime(tz.local, date.year, date.month, date.day,
+                      date.hour, date.minute, date.second)
+                  .add(Duration(minutes: i + 1)),
               NotificationDetails(
                   android: AndroidNotificationDetails(val.id, "Pembayaran",
                       channelDescription: "Pengingat pembayaran dalam 3 hari")),
               androidAllowWhileIdle: true,
               uiLocalNotificationDateInterpretation:
                   UILocalNotificationDateInterpretation.absoluteTime);
+          var notif = await users.doc(uid).collection('notif').add({
+            'show': Timestamp.fromDate(date.add(Duration(minutes: i + 1))),
+            'title': pembayaranKe + " " + _editNamaController.text,
+            'body':
+                "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
+          });
           appendMonth++;
         }
 

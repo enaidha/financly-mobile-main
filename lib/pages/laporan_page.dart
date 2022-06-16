@@ -518,7 +518,9 @@ class _LaporanPageState extends State<LaporanPage> {
     final localeObj = locale != null ? Locale(locale) : null;
     final selected = await showMonthYearPicker(
         context: context,
-        initialDate: DateTime.now(),
+        initialDate: DateTime(
+            _filterTahun > 0 ? _filterTahun : DateTime.now().year,
+            _filterBulan > 0 ? _filterBulan : DateTime.now().month),
         firstDate: DateTime(2022),
         lastDate: DateTime(2030),
         locale: localeObj,

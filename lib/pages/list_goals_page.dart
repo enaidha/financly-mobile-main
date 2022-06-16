@@ -38,9 +38,11 @@ class _ListGoalsPageState extends State<ListGoalsPage> {
       for (var i = 0; i < value.size; i++) {}
     });
     await users.doc(uid).get().then((value) {
-      setState(() {
-        _currentSaldo = value.get('current_saldo');
-      });
+      if (value.exists) {
+        setState(() {
+          _currentSaldo = value.get('current_saldo');
+        });
+      }
     });
     print('current saldo $_currentSaldo');
   }

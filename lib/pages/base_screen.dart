@@ -65,7 +65,7 @@ class _BaseScreenState extends State<BaseScreen> {
   Future<String> getPref() async {
     SharedPreferences pref = preferences;
     pref = pref;
-    String userId = pref.getString('user_id')!;
+    String userId = pref.getString('user_id') ?? '';
 
     name = pref.getString('name')!;
     email = pref.getString('email')!;
@@ -150,7 +150,7 @@ class _BaseScreenState extends State<BaseScreen> {
                       height: _sizeConfig.screenHeight,
                       child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
-                          children: <Widget>[_header(), body(snap)]),
+                          children: <Widget>[_header(snap), body(snap)]),
                     ),
                   );
                 },
@@ -163,10 +163,11 @@ class _BaseScreenState extends State<BaseScreen> {
   }
 
   Widget body(snap) {
-    var saldo;
     user.doc(snap.data.toString()).get().then((value) {
       setState(() {
-        _currentSaldo = value.get('current_saldo');
+        if (value.exists) {
+          _currentSaldo = value.get('current_saldo');
+        }
       });
     });
     return Expanded(
@@ -651,7 +652,7 @@ class _BaseScreenState extends State<BaseScreen> {
         ));
   }
 
-  Row _header() {
+  Row _header(snap) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -691,15 +692,99 @@ class _BaseScreenState extends State<BaseScreen> {
           ),
         ),
         const Spacer(),
-        IconButton(
-            onPressed: () {
-              // Navigator.pushNamed(context, '/option');
-            },
-            icon: const Icon(
-              FontAwesomeIcons.bell,
-              size: 18,
-              color: Colors.black,
-            )),
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream:
+                user.doc(snap.data.toString()).collection('notif').snapshots(),
+            builder: (context, snapshot) {
+              List<QueryDocumentSnapshot<Map<String, dynamic>>> data = [];
+              if (snapshot.hasData) {
+                data.addAll(snapshot.data!.docs
+                    .where((element) =>
+                        (element.data()['show'] as Timestamp)
+                            .compareTo(Timestamp.now()) <
+                        1)
+                    .toList());
+              }
+              return Stack(
+                children: [
+                  IconButton(
+                      onPressed: data.isEmpty
+                          ? null
+                          : () {
+                              showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => AlertDialog(
+                                        content: SingleChildScrollView(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              for (var element in data)
+                                                Card(
+                                                  child: ListTile(
+                                                    title: Text(element
+                                                        .data()['title']),
+                                                    subtitle: Text(
+                                                        element.data()['body']),
+                                                  ),
+                                                )
+                                            ],
+                                          ),
+                                        ),
+                                        actions: [
+                                          InkWell(
+                                            onTap: () {
+                                              for (var element in data) {
+                                                user
+                                                    .doc(snap.data.toString())
+                                                    .collection('notif')
+                                                    .doc(element.id)
+                                                    .delete();
+                                              }
+                                              Navigator.pop(context);
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                  color: mPrimaryColor,
+                                                  border: Border.all(
+                                                      color: mPrimaryColor),
+                                                  borderRadius:
+                                                      const BorderRadius.all(
+                                                          Radius.circular(12))),
+                                              child: Text("Tutup",
+                                                  style: mInputStyle.copyWith(
+                                                      fontSize: _sizeConfig
+                                                              .blockVertical! *
+                                                          2,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      color: Colors.white)),
+                                            ),
+                                          ),
+                                        ],
+                                      ));
+                            },
+                      icon: const Icon(
+                        FontAwesomeIcons.bell,
+                        size: 18,
+                        color: Colors.black,
+                      )),
+                  data.isNotEmpty
+                      ? Positioned(
+                          top: 18,
+                          right: 16,
+                          child: Container(
+                            height: 8,
+                            width: 8,
+                            decoration: const BoxDecoration(
+                                color: Colors.pink, shape: BoxShape.circle),
+                          ),
+                        )
+                      : const SizedBox.shrink()
+                ],
+              );
+            }),
         Padding(
           padding:
               EdgeInsets.only(right: _sizeConfig.marginHorizontalSize! / 1.4),
