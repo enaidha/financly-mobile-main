@@ -297,8 +297,6 @@ class _OptionPageState extends State<OptionPage> {
           ),
         ],
       ),
-      bottomNavigationBar: _myBottomBar(),
-      floatingActionButton: _myFloat(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
@@ -306,99 +304,12 @@ class _OptionPageState extends State<OptionPage> {
   AppBar _appBar() {
     return AppBar(
       backgroundColor: mPrimaryColor,
-      leading: Container(),
       title: Text(
         'Pengaturan',
         style: mCardTitleStyle.copyWith(
           fontSize: _sizeConfig.blockHorizontal! * 4.5,
         ),
       ),
-    );
-  }
-
-  Widget _myBottomBar() {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        // sets the background color of the `BottomNavigationBar`
-        canvasColor: mPrimaryColor,
-        // sets the active color of the `BottomNavigationBar` if `Brightness` is light
-        primaryColor: Colors.red,
-      ),
-      child: BottomAppBar(
-        color: mPrimaryColor,
-        shape: const CircularNotchedRectangle(),
-        child: SizedBox(
-          height: _sizeConfig.blockVertical! * 8,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/list_goals');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.add_reaction,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/laporan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.restore_page_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 26,
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pemasukan');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_down_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/pengeluaran');
-                  },
-                  splashColor: Colors.white,
-                  child: const Icon(
-                    Icons.arrow_circle_up_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  FloatingActionButton _myFloat() {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/home');
-      },
-      backgroundColor: mYellowColor,
-      child: const Icon(Icons.home),
-      tooltip: 'Home',
     );
   }
 }

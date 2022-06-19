@@ -126,6 +126,11 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
           if ((int.parse(_editNominalController.text) - totalTerbayar) > 0) {
             for (var i = 0; i < value.size; i++) {
               if (value.docs.elementAt(i).get('status_pembayaran') != 'done') {
+                await users
+                    .doc(uid)
+                    .collection('notif')
+                    .doc(value.docs.elementAt(i).get('notif_id'))
+                    .delete();
                 await flutterLocalNotificationsPlugin
                     .cancel(value.docs.elementAt(i).get('notif_id'));
                 goals
@@ -138,6 +143,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
 
             int startPembayaran = dibayar;
             date = DateTime(date.year, date.month + startPembayaran, date.day);
+            var now = DateTime.now();
             for (var i = 0; i < result; i++) {
               var getMonthTarget = i + 1;
               startPembayaran++;
@@ -154,14 +160,14 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                       '-01';
               var jumlahGoals = targetMonth;
               var status = 'undone';
-              int notifId = date.year +
-                  date.month +
-                  date.day +
-                  date.hour +
-                  date.minute +
-                  date.second +
-                  date.millisecond +
-                  date.microsecond +
+              int notifId = now.year +
+                  now.month +
+                  now.day +
+                  now.hour +
+                  now.minute +
+                  now.second +
+                  now.millisecond +
+                  now.microsecond +
                   i;
               var val =
                   await goals.doc(goalsId).collection('checklistgoals').add({
@@ -171,27 +177,41 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 'status_pembayaran': status,
                 'notif_id': notifId
               });
-              await flutterLocalNotificationsPlugin.zonedSchedule(
-                  notifId,
-                  pembayaranKe + " " + _editNamaController.text,
-                  "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
-                  tz.TZDateTime(tz.local, date.year, date.month, date.day,
-                          date.hour, date.minute, date.second)
-                      .add(Duration(minutes: i + 1)),
-                  NotificationDetails(
-                      android: AndroidNotificationDetails(val.id, "Pembayaran",
-                          channelDescription:
-                              "Pengingat pembayaran dalam 3 hari")),
-                  androidAllowWhileIdle: true,
-                  uiLocalNotificationDateInterpretation:
-                      UILocalNotificationDateInterpretation.absoluteTime);
-              var notif = await users.doc(uid).collection('notif').add({
-                'show': Timestamp.fromDate(date.add(Duration(minutes: i + 1))),
-                'title': pembayaranKe + " " + _editNamaController.text,
-                'body': "Jangan lupa bahwa " +
-                    pembayaranKe +
-                    " tinggal 3 hari lagi",
-              });
+
+              if (isProduction) {
+                await users.doc(uid).collection('notif').add({
+                  'show': Timestamp.fromDate(DateTime(
+                          deadlineNextMonth.year,
+                          deadlineNextMonth.month,
+                          deadlineNextMonth.day,
+                          now.hour,
+                          now.minute,
+                          now.second)
+                      .subtract(const Duration(days: 3))),
+                  'title': pembayaranKe + " " + _editNamaController.text,
+                  'body': "Jangan lupa bahwa " +
+                      pembayaranKe +
+                      " tinggal 3 hari lagi",
+                  'goals_id': goalsId,
+                  'notif_id': notifId
+                });
+              } else {
+                await users
+                    .doc(uid)
+                    .collection('notif')
+                    .doc(notifId.toString())
+                    .set({
+                  'show': Timestamp.fromDate(DateTime(now.year, now.month,
+                          now.day, now.hour, now.minute, now.second)
+                      .add(Duration(minutes: 1 + i))),
+                  'title': pembayaranKe + " " + _editNamaController.text,
+                  'body': "Jangan lupa bahwa " +
+                      pembayaranKe +
+                      " tinggal 3 hari lagi",
+                  'goals_id': goalsId,
+                  'notif_id': notifId
+                });
+              }
               appendMonth++;
             }
 
@@ -205,7 +225,8 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                   ? int.parse(_nominal)
                   : int.parse(_editNominalController.text),
               'updated_at': now,
-              'progres': (dibayar / deadlineResult) * 100
+              'progres': (dibayar / deadlineResult) * 100,
+              'status': 'onprogress'
             });
 
             _editNamaController.clear();

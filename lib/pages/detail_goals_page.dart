@@ -5,7 +5,6 @@ import 'package:finance_plan/constants/size_config.dart';
 import 'package:finance_plan/constants/style_constant.dart';
 import 'package:finance_plan/models/user_argument.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:progress_indicator/progress_indicator.dart';
@@ -503,7 +502,24 @@ class _DetailGoalsPageState extends State<DetailGoalsPage> {
                                     .doc(goalsId)
                                     .collection('checklistgoals')
                                     .doc(element.id)
-                                    .delete();
+                                    .get()
+                                    .then((value) {
+                                  int notifId = value.data()!['notif_id'];
+                                  users
+                                      .doc(uid)
+                                      .collection('notif')
+                                      .doc(notifId.toString())
+                                      .delete();
+                                  flutterLocalNotificationsPlugin
+                                      .cancel(notifId);
+                                  users
+                                      .doc(uid)
+                                      .collection('goals')
+                                      .doc(goalsId)
+                                      .collection('checklistgoals')
+                                      .doc(element.id)
+                                      .delete();
+                                });
                               }));
                       await users
                           .doc(uid)

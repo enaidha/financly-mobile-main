@@ -18,11 +18,14 @@ import 'package:finance_plan/pages/list_berita.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:progress_indicator/progress_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../main.dart';
+import '../models/user_argument.dart';
 
 class BaseScreen extends StatefulWidget {
   const BaseScreen({Key? key}) : super(key: key);
@@ -263,13 +266,23 @@ class _BaseScreenState extends State<BaseScreen> {
                             return Column(
                               children: snapGoals.data!.docs
                                   .take(3)
-                                  .map((e) => _goalsLayout(
-                                      title: e['nama'],
-                                      target: e['target'].toString(),
-                                      status: e['status'],
-                                      deadline: e['deadline'],
-                                      deadlineBulan: e['deadline_bulan'],
-                                      createdAt: e['created_at']))
+                                  .map((e) => InkWell(
+                                        onTap: () {
+                                          Navigator.pushNamed(
+                                              context, '/detail_goals',
+                                              arguments: GoalsArgument(
+                                                  goalsId: e.id,
+                                                  index: 0,
+                                                  currentSaldo: _currentSaldo));
+                                        },
+                                        child: _goalsLayout(
+                                            title: e['nama'],
+                                            target: e['target'].toString(),
+                                            status: e['status'],
+                                            deadline: e['deadline'],
+                                            deadlineBulan: e['deadline_bulan'],
+                                            createdAt: e['created_at']),
+                                      ))
                                   .toList(),
                             );
                           } else {
@@ -704,6 +717,33 @@ class _BaseScreenState extends State<BaseScreen> {
                             .compareTo(Timestamp.now()) <
                         1)
                     .toList());
+                for (var element in snapshot.data!.docs) {
+                  Timestamp elementDate = element.data()['show'];
+                  if ((element.data()['show'] as Timestamp)
+                          .compareTo(Timestamp.now()) >=
+                      1) {
+                    flutterLocalNotificationsPlugin.zonedSchedule(
+                        element.data()['notif_id'],
+                        element.data()['title'],
+                        element.data()['body'],
+                        tz.TZDateTime(
+                            tz.local,
+                            elementDate.toDate().year,
+                            elementDate.toDate().month,
+                            elementDate.toDate().day,
+                            elementDate.toDate().hour,
+                            elementDate.toDate().minute,
+                            elementDate.toDate().second),
+                        NotificationDetails(
+                            android: AndroidNotificationDetails(
+                                element.id, "Pembayaran",
+                                channelDescription:
+                                    "Pengingat pembayaran dalam 3 hari")),
+                        androidAllowWhileIdle: true,
+                        uiLocalNotificationDateInterpretation:
+                            UILocalNotificationDateInterpretation.absoluteTime);
+                  }
+                }
               }
               return Stack(
                 children: [
@@ -714,55 +754,74 @@ class _BaseScreenState extends State<BaseScreen> {
                               showDialog(
                                   context: context,
                                   barrierDismissible: false,
-                                  builder: (context) => AlertDialog(
-                                        content: SingleChildScrollView(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              for (var element in data)
-                                                Card(
-                                                  child: ListTile(
-                                                    title: Text(element
-                                                        .data()['title']),
-                                                    subtitle: Text(
-                                                        element.data()['body']),
-                                                  ),
-                                                )
-                                            ],
-                                          ),
-                                        ),
-                                        actions: [
-                                          InkWell(
-                                            onTap: () {
-                                              for (var element in data) {
-                                                user
-                                                    .doc(snap.data.toString())
-                                                    .collection('notif')
-                                                    .doc(element.id)
-                                                    .delete();
-                                              }
-                                              Navigator.pop(context);
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                  color: mPrimaryColor,
-                                                  border: Border.all(
-                                                      color: mPrimaryColor),
-                                                  borderRadius:
-                                                      const BorderRadius.all(
-                                                          Radius.circular(12))),
-                                              child: Text("Tutup",
-                                                  style: mInputStyle.copyWith(
-                                                      fontSize: _sizeConfig
-                                                              .blockVertical! *
-                                                          2,
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                      color: Colors.white)),
+                                  builder: (context) => WillPopScope(
+                                        onWillPop: () async {
+                                          return false;
+                                        },
+                                        child: AlertDialog(
+                                          content: SingleChildScrollView(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                for (var element in data)
+                                                  Card(
+                                                    child: ListTile(
+                                                      onTap: () {
+                                                        Navigator.pushNamed(
+                                                            context,
+                                                            '/detail_goals',
+                                                            arguments: GoalsArgument(
+                                                                goalsId: element
+                                                                        .data()[
+                                                                    'goals_id'],
+                                                                index: 0,
+                                                                currentSaldo:
+                                                                    _currentSaldo));
+                                                      },
+                                                      title: Text(element
+                                                          .data()['title']),
+                                                      subtitle: Text(element
+                                                          .data()['body']),
+                                                    ),
+                                                  )
+                                              ],
                                             ),
                                           ),
-                                        ],
+                                          actions: [
+                                            InkWell(
+                                              onTap: () {
+                                                for (var element in data) {
+                                                  user
+                                                      .doc(snap.data.toString())
+                                                      .collection('notif')
+                                                      .doc(element.id)
+                                                      .delete();
+                                                }
+                                                Navigator.pop(context);
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                    color: mPrimaryColor,
+                                                    border: Border.all(
+                                                        color: mPrimaryColor),
+                                                    borderRadius:
+                                                        const BorderRadius.all(
+                                                            Radius.circular(
+                                                                12))),
+                                                child: Text("Tutup",
+                                                    style: mInputStyle.copyWith(
+                                                        fontSize: _sizeConfig
+                                                                .blockVertical! *
+                                                            2,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                        color: Colors.white)),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ));
                             },
                       icon: const Icon(

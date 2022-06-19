@@ -98,6 +98,7 @@ class _GoalsPageState extends State<GoalsPage> {
       }).then((value) async {
         uuid = value.id;
         print("uuid : " + uuid.toString());
+        print('is_production : ' + isProduction.toString());
 
         var targetMonth =
             int.parse(_editNominalController.text) / deadlineResult;
@@ -139,25 +140,59 @@ class _GoalsPageState extends State<GoalsPage> {
             'status_pembayaran': status,
             'notif_id': notifId
           });
-          await flutterLocalNotificationsPlugin.zonedSchedule(
-              notifId,
-              pembayaranKe + " " + _editNamaController.text,
-              "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
-              tz.TZDateTime(tz.local, date.year, date.month, date.day,
-                      date.hour, date.minute, date.second)
-                  .add(Duration(minutes: i + 1)),
-              NotificationDetails(
-                  android: AndroidNotificationDetails(val.id, "Pembayaran",
-                      channelDescription: "Pengingat pembayaran dalam 3 hari")),
-              androidAllowWhileIdle: true,
-              uiLocalNotificationDateInterpretation:
-                  UILocalNotificationDateInterpretation.absoluteTime);
-          var notif = await users.doc(uid).collection('notif').add({
-            'show': Timestamp.fromDate(date.add(Duration(minutes: i + 1))),
-            'title': pembayaranKe + " " + _editNamaController.text,
-            'body':
-                "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
-          });
+          //add notif to status bar
+          // await flutterLocalNotificationsPlugin.zonedSchedule(
+          //     notifId,
+          //     pembayaranKe + " " + _editNamaController.text,
+          //     "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
+          //     tz.TZDateTime(
+          //             tz.local,
+          //             deadlineNextMonth.year,
+          //             deadlineNextMonth.month,
+          //             deadlineNextMonth.day,
+          //             date.hour,
+          //             date.minute,
+          //             date.second)
+          //         .subtract(const Duration(days: 3)),
+          //     NotificationDetails(
+          //         android: AndroidNotificationDetails(val.id, "Pembayaran",
+          //             channelDescription: "Pengingat pembayaran dalam 3 hari")),
+          //     androidAllowWhileIdle: true,
+          //     uiLocalNotificationDateInterpretation:
+          //         UILocalNotificationDateInterpretation.absoluteTime);
+          //add notif to firebase and show in base_screen
+          if (isProduction) {
+            var notif = await users.doc(uid).collection('notif').add({
+              'show': Timestamp.fromDate(DateTime(
+                      deadlineNextMonth.year,
+                      deadlineNextMonth.month,
+                      deadlineNextMonth.day,
+                      date.hour,
+                      date.minute,
+                      date.second)
+                  .subtract(const Duration(days: 3))),
+              'title': pembayaranKe + " " + _editNamaController.text,
+              'body':
+                  "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
+              'goals_id': uuid,
+              'notif_id': notifId
+            });
+          } else {
+            var notif = await users
+                .doc(uid)
+                .collection('notif')
+                .doc(notifId.toString())
+                .set({
+              'show': Timestamp.fromDate(DateTime(date.year, date.month,
+                      date.day, date.hour, date.minute, date.second)
+                  .add(Duration(minutes: 1 + i))),
+              'title': pembayaranKe + " " + _editNamaController.text,
+              'body':
+                  "Jangan lupa bahwa " + pembayaranKe + " tinggal 3 hari lagi",
+              'goals_id': uuid,
+              'notif_id': notifId
+            });
+          }
           appendMonth++;
         }
 

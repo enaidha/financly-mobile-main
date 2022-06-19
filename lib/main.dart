@@ -62,6 +62,8 @@ Future getDocs() async {
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
+bool isProduction = false;
+
 late SharedPreferences preferences;
 void main() async {
   tz.initializeTimeZones();
@@ -80,11 +82,18 @@ void main() async {
 
 // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('ic_launcher');
+      AndroidInitializationSettings('mipmap/ic_launcher');
   const InitializationSettings initializationSettings =
       InitializationSettings(android: initializationSettingsAndroid);
   await flutterLocalNotificationsPlugin.initialize(initializationSettings,
       onSelectNotification: (payload) {});
+
+  var settingsNotifikasi = await FirebaseFirestore.instance
+      .collection('settings')
+      .doc('notifikasi')
+      .get();
+
+  isProduction = settingsNotifikasi.data()!['is_production'];
 
   runApp(const MyApp());
 }
