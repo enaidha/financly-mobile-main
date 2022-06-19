@@ -50,6 +50,7 @@ class _OptionPageState extends State<OptionPage> {
     Widget continueButton = FlatButton(
       child: Text("Ya"),
       onPressed: () {
+        flutterLocalNotificationsPlugin.cancelAll();
         logout(context);
       },
     );
